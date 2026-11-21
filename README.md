@@ -1,5 +1,7 @@
 # docker-koito
 
+[![validate](https://github.com/egoexpress/docker-koito/actions/workflows/validate.yml/badge.svg)](https://github.com/egoexpress/docker-koito/actions/workflows/validate.yml)
+
 Docker Compose setup for [Koito](https://koito.io), a ListenBrainz-compatible
 scrobbler, served behind [nginx-proxy](https://github.com/nginx-proxy/nginx-proxy)
 with automatic Let's Encrypt certificates from
@@ -10,11 +12,13 @@ ListenBrainz API, so anything that scrobbles to ListenBrainz can scrobble to it.
 
 ## What this repository contains
 
-| File                 | Purpose                                      |
-| -------------------- | -------------------------------------------- |
-| `docker-compose.yaml` | The Koito service and its persistent volume   |
-| `.env.example`        | Template for the hostname and certificate email |
-| `LICENSE`             | MIT license for this deployment configuration |
+| File                             | Purpose                                          |
+| -------------------------------- | ------------------------------------------------ |
+| `docker-compose.yaml`            | The Koito service and its persistent volume      |
+| `.env.example`                   | Template for the hostname and certificate email  |
+| `renovate.json`                  | Automated image updates for the Koito tag        |
+| `LICENSE`                        | MIT license for this deployment configuration    |
+| `.github/workflows/validate.yml` | CI check that the Compose file renders           |
 
 ## Architecture
 
@@ -122,7 +126,11 @@ the user exists.
 | `ACME_HOST`             | from `.env`                 | Domain to request a certificate for                          |
 | `ACME_EMAIL`            | from `.env`                 | Let's Encrypt contact address                                |
 | `KOITO_LOG_LEVEL`       | `warn`                      | `debug`, `info`, `warn`, `error`, `fatal`                    |
-| `KOITO_CORS_ALLOWED_ORIGINS` | `*`                    | Allows browser clients from any origin to call the API        |
+
+CORS is left at Koito's default, which sends no CORS headers. That is all the
+web client needs, since it is served from this same host. Only add
+`KOITO_CORS_ALLOWED_ORIGINS` when a browser application on another domain calls
+the API directly.
 
 ### How the proxy finds the web port
 
@@ -160,16 +168,38 @@ docker run --rm -v docker-koito_data:/data -v "$PWD":/backup \
 docker compose start app
 ```
 
+## Logs
+
+`docker compose logs -f` follows the container output. The service caps its
+`json-file` logs at 10 MB across 3 files (30 MB total), so a long-running
+instance cannot grow logs without bound on a host without global rotation.
+
 ## Updating
 
-The image is pinned to a release tag. To move to a newer release, bump the tag
-in `docker-compose.yaml` and recreate the container:
+The image is pinned to `gabehf/koito:v0.3`, the 0.3 release line. Patch
+releases land in that tag and are picked up by `docker compose pull`; a new
+minor or major release needs a tag bump.
+
+[Renovate](https://docs.renovatebot.com/) opens that bump once the Renovate
+GitHub app is installed on this repository. `renovate.json` keeps the tag at
+major.minor precision (patch tags are ignored) and does not pin image digests.
+
+To update by hand, bump the tag and recreate the container:
 
 ```sh
 docker compose pull && docker compose up -d
 ```
 
 Migrations run automatically on startup. Take a backup first.
+
+## Validation
+
+Every push to `main` and every pull request runs `docker compose config` in
+GitHub Actions to confirm the file still renders. To run the same check locally:
+
+```sh
+VIRTUAL_HOST=koito.example.com ACME_EMAIL=admin@example.com docker compose config --quiet
+```
 
 ## Troubleshooting
 
