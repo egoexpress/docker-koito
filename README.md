@@ -174,6 +174,26 @@ docker compose start app
 `json-file` logs at 10 MB across 3 files (30 MB total), so a long-running
 instance cannot grow logs without bound on a host without global rotation.
 
+## Healthcheck
+
+The service probes Koito's readiness endpoint `/apis/web/v1/health`, which
+answers `503` until the database store and HTTP server are up, and `200`
+afterwards:
+
+```sh
+docker compose ps
+docker inspect --format '{{.State.Health.Status}}' docker-koito-app-1
+```
+
+The probe uses `bash` and `/dev/tcp` because the image ships neither `curl` nor
+`wget`. It honours `KOITO_LISTEN_PORT` and falls back to `4110`, so it keeps
+working if you change the listen port.
+
+`restart: unless-stopped` reacts to container exits, not to an `unhealthy`
+state — Compose does not restart on a failed probe. The status is visible in
+`docker compose ps`, in monitoring that reads container health, and in a proxy
+stack that waits on `depends_on: condition: service_healthy`.
+
 ## Updating
 
 The image is pinned to `gabehf/koito:v0.3`, the 0.3 release line. Patch
@@ -208,6 +228,10 @@ VIRTUAL_HOST=koito.example.com ACME_EMAIL=admin@example.com docker compose confi
   nginx-proxy targets: the image's exposed port, or `VIRTUAL_PORT` when set.
 - **`Could not find network named 'proxy_frontend'`** — the external network is
   missing; create it or start the proxy stack first.
+- **Container shows `(unhealthy)`** — Koito is not answering its readiness
+  endpoint. Check `docker compose logs app` for a failed migration or a startup
+  error, and confirm that any `KOITO_LISTEN_PORT` override matches the port
+  Koito actually binds.
 - **No certificate issued** — DNS for `VIRTUAL_HOST` must resolve to the proxy
   host before acme-companion can validate the HTTP-01 challenge.
 - **Login fails / `changeme` rejected** — the default user is only created on

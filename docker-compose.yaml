@@ -16,6 +16,19 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - |
+          exec 3<>/dev/tcp/127.0.0.1/$${KOITO_LISTEN_PORT:-4110}
+          printf 'GET /apis/web/v1/health HTTP/1.0\r\n\r\n' >&3
+          head -n 1 <&3 | grep -q ' 200 '
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   data:
