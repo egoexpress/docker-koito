@@ -14,11 +14,12 @@ ListenBrainz API, so anything that scrobbles to ListenBrainz can scrobble to it.
 | -------------------- | -------------------------------------------- |
 | `docker-compose.yaml` | The Koito service and its persistent volume   |
 | `.env.example`        | Template for the hostname and certificate email |
+| `LICENSE`             | MIT license for this deployment configuration |
 
 ## Architecture
 
 ```
-client ──HTTPS──▶ nginx-proxy ──HTTP:80──▶ koito:80 ──▶ /etc/koito/koito.db
+client ──HTTPS──▶ nginx-proxy ──HTTP:4110──▶ koito:4110 ──▶ /etc/koito/koito.db
                        ▲
                        └── acme-companion (certificates)
 ```
@@ -91,7 +92,7 @@ docker network create proxy_frontend
 git clone git@github.com:egoexpress/docker-koito.git
 cd docker-koito
 cp .env.example .env
-$EDITOR .env        # set VIRTUAL_HOST and LETSENCRYPT_EMAIL
+$EDITOR .env        # set VIRTUAL_HOST and ACME_EMAIL
 docker compose up -d
 ```
 
@@ -118,26 +119,24 @@ the user exists.
 | Variable                | Value                       | Notes                                                        |
 | ----------------------- | --------------------------- | ------------------------------------------------------------ |
 | `VIRTUAL_HOST`          | from `.env`                 | Domain nginx-proxy serves                                    |
-| `VIRTUAL_PORT`          | `80`                        | Required, see below                                          |
-| `LETSENCRYPT_HOST`      | from `.env`                 | Domain to request a certificate for                          |
-| `LETSENCRYPT_EMAIL`     | from `.env`                 | Let's Encrypt contact address                                |
-| `KOITO_LISTEN_PORT`     | `80`                        | Port Koito binds inside the container                        |
+| `ACME_HOST`             | from `.env`                 | Domain to request a certificate for                          |
+| `ACME_EMAIL`            | from `.env`                 | Let's Encrypt contact address                                |
 | `KOITO_LOG_LEVEL`       | `warn`                      | `debug`, `info`, `warn`, `error`, `fatal`                    |
 | `KOITO_CORS_ALLOWED_ORIGINS` | `*`                    | Allows browser clients from any origin to call the API        |
 
-### Why `VIRTUAL_PORT` is required
+### How the proxy finds the web port
 
-The Koito image only `EXPOSE`s port `4110`. nginx-proxy resolves the upstream
-port as `VIRTUAL_PORT`, otherwise the single exposed port, otherwise `80`. Since
-`KOITO_LISTEN_PORT=80` makes Koito listen on 80 only, the proxy would target the
-closed port 4110 and answer with `502 Bad Gateway`.
+Koito listens on its default port `4110`, and the image declares exactly that
+port with `EXPOSE`. Because it is the only exposed port, nginx-proxy uses it as
+the upstream with no extra configuration.
 
-Alternatively, drop `KOITO_LISTEN_PORT` entirely: Koito then listens on its
-default 4110, and nginx-proxy discovers that exposed port on its own.
+If you ever set `KOITO_LISTEN_PORT` to another value, also set `VIRTUAL_PORT` to
+match. nginx-proxy otherwise keeps targeting `4110` and answers with
+`502 Bad Gateway`.
 
-Both `VIRTUAL_PORT` and `LETSENCRYPT_*` work unchanged with the current
-acme-companion release. Newer deployments prefer `ACME_HOST` and `ACME_EMAIL`
-instead of the two `LETSENCRYPT_*` variables.
+`ACME_HOST` and `ACME_EMAIL` are the current acme-companion variable names. Older
+releases used `LETSENCRYPT_HOST` and `LETSENCRYPT_EMAIL`, which are deprecated but
+still accepted.
 
 The full list of Koito options is in the
 [configuration reference](https://koito.io/reference/configuration/). Every
@@ -174,9 +173,9 @@ Migrations run automatically on startup. Take a backup first.
 
 ## Troubleshooting
 
-- **`502 Bad Gateway`** — the proxy cannot reach the container. Check
-  `VIRTUAL_PORT=80` is present and that Koito is still listening on 80
-  (`KOITO_LISTEN_PORT`).
+- **`502 Bad Gateway`** — the proxy cannot reach the container. The port Koito
+  listens on (`KOITO_LISTEN_PORT`, default `4110`) must match the port
+  nginx-proxy targets: the image's exposed port, or `VIRTUAL_PORT` when set.
 - **`Could not find network named 'proxy_frontend'`** — the external network is
   missing; create it or start the proxy stack first.
 - **No certificate issued** — DNS for `VIRTUAL_HOST` must resolve to the proxy
@@ -190,8 +189,10 @@ Migrations run automatically on startup. Take a backup first.
 
   The new password is written to the container's standard output.
 
-## Credits
+## License
 
-Koito is developed by [gabehf](https://github.com/gabehf/Koito) and licensed
-separately from this Compose setup. This repository only provides the
-deployment configuration.
+The deployment configuration in this repository is released under the
+[MIT License](LICENSE).
+
+Koito itself is a separate project by [gabehf](https://github.com/gabehf/Koito)
+with its own license; this repository only provides the Compose setup.
