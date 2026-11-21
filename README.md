@@ -200,8 +200,9 @@ The image is pinned to `gabehf/koito:v0.3`, the 0.3 release line. Patch
 releases land in that tag and are picked up by `docker compose pull`; a new
 minor or major release needs a tag bump.
 
-[Renovate](https://docs.renovatebot.com/) opens that bump once the Renovate
-GitHub app is installed on this repository. `renovate.json` keeps the tag at
+[Renovate](https://docs.renovatebot.com/) watches the tag and opens that bump.
+It is installed on this repository; its Dependency Dashboard issue lists the
+detected image and any pending update. `renovate.json` keeps the tag at
 major.minor precision (patch tags are ignored) and does not pin image digests.
 
 To update by hand, bump the tag and recreate the container:
