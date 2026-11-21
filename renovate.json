@@ -7,6 +7,11 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["gabehf/koito"],
       "extractVersion": "^(?<version>v\\d+\\.\\d+)"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/egoexpress/docker-koito"],
+      "enabled": false
     }
   ]
 }
