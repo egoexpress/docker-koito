@@ -1,0 +1,24 @@
+name: validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compose-config:
+    name: Compose config
+    runs-on: ubuntu-latest
+    env:
+      VIRTUAL_HOST: koito.example.com
+      ACME_EMAIL: admin@example.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yaml
+        run: docker compose config --quiet
