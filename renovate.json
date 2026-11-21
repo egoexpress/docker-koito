@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "pinDigests": false,
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gabehf/koito"],
+      "extractVersion": "^(?<version>v\\d+\\.\\d+)"
+    }
+  ]
+}
