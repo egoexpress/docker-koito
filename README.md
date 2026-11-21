@@ -16,7 +16,9 @@ ListenBrainz API, so anything that scrobbles to ListenBrainz can scrobble to it.
 | -------------------------------- | ------------------------------------------------ |
 | `docker-compose.yaml`            | The Koito service and its persistent volume      |
 | `.env.example`                   | Template for the hostname and certificate email  |
-| `renovate.json`                  | Automated image updates for the Koito tag        |
+| `image/`                         | Vendored Koito source for the custom image       |
+| `.github/workflows/publish-image.yml` | Builds the custom image and pushes it to GHCR |
+| `renovate.json`                  | Automated image updates and ignore rules         |
 | `LICENSE`                        | MIT license for this deployment configuration    |
 | `.github/workflows/validate.yml` | CI check that the Compose file renders           |
 
@@ -196,22 +198,39 @@ stack that waits on `depends_on: condition: service_healthy`.
 
 ## Updating
 
-The image is pinned to `gabehf/koito:v0.3`, the 0.3 release line. Patch
-releases land in that tag and are picked up by `docker compose pull`; a new
-minor or major release needs a tag bump.
+The service runs a custom image, `ghcr.io/egoexpress/docker-koito:0.3.2-pr382`,
+built from the vendored Koito source in [`image/`](image/README.md). It exists
+because upstream `v0.3.x` only implements the write side of the ListenBrainz
+API; the vendored commit adds the read endpoints that scrobblers such as
+PanoScrobbler use for history and statistics (upstream PR
+[#382](https://github.com/gabehf/Koito/pull/382)).
 
-[Renovate](https://docs.renovatebot.com/) watches the tag and opens that bump.
-It is installed on this repository; its Dependency Dashboard issue lists the
-detected image and any pending update. `renovate.json` keeps the tag at
-major.minor precision (patch tags are ignored) and does not pin image digests.
+`.github/workflows/publish-image.yml` builds `image/` and pushes the
+`0.3.2-pr382` and `pr382` tags to GHCR whenever something under `image/`
+changes. After re-vendoring a newer upstream commit, bump the tag in both that
+workflow and `docker-compose.yaml`.
 
-To update by hand, bump the tag and recreate the container:
+Renovate is configured not to touch this image — its tag is maintained here.
+The `gabehf/koito` rule stays in `renovate.json` for the day this repository
+returns to the upstream image.
+
+If the GHCR package is private, authenticate before pulling:
+
+```sh
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u <user> --password-stdin
+```
+
+To update an instance:
 
 ```sh
 docker compose pull && docker compose up -d
 ```
 
 Migrations run automatically on startup. Take a backup first.
+
+Once upstream releases these endpoints, delete `image/`, remove the
+`publish-image` workflow, and point the service back at
+`gabehf/koito:<version>`.
 
 ## Validation
 
@@ -249,5 +268,7 @@ VIRTUAL_HOST=koito.example.com ACME_EMAIL=admin@example.com docker compose confi
 The deployment configuration in this repository is released under the
 [MIT License](LICENSE).
 
-Koito itself is a separate project by [gabehf](https://github.com/gabehf/Koito)
-with its own license; this repository only provides the Compose setup.
+`image/` contains source from [Koito](https://github.com/gabehf/Koito) by Gabe
+Farrell, which is MIT licensed. Its upstream license is kept unchanged in
+[`image/LICENSE`](image/LICENSE), and the exact commit, pull request and local
+modifications are documented in [`image/README.md`](image/README.md).
