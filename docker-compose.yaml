@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/egoexpress/docker-koito:0.3.2-pr382
+    image: ghcr.io/egoexpress/docker-koito:0.3.2-pr382.2
     restart: unless-stopped
     volumes:
       - data:/etc/koito

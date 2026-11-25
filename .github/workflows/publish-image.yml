@@ -37,7 +37,7 @@ jobs:
           context: image
           push: true
           build-args: |
-            KOITO_VERSION=0.3.2-pr382
+            KOITO_VERSION=0.3.2-pr382.2
           tags: |
-            ghcr.io/${{ github.repository }}:0.3.2-pr382
+            ghcr.io/${{ github.repository }}:0.3.2-pr382.2
             ghcr.io/${{ github.repository }}:pr382

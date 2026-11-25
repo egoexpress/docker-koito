@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gabehf/koito/engine/middleware"
+	"github.com/gabehf/koito/internal/catalog"
 	"github.com/gabehf/koito/internal/db"
 	"github.com/gabehf/koito/internal/logger"
 	"github.com/gabehf/koito/internal/memkv"
@@ -133,8 +134,8 @@ func LbzPlayingNowHandler(store db.DB) http.HandlerFunc {
 		}
 
 		listens := []LbzListen{}
-		if trackID, ok := nowPlayingTrackID(u.ID); ok {
-			track, err := store.GetTrackDetail(ctx, trackID)
+		if state, ok := nowPlayingState(u.ID); ok {
+			track, err := store.GetTrackDetail(ctx, state.TrackID)
 			if err != nil {
 				l.Err(err).Msg("LbzPlayingNowHandler: Failed to get currently playing track")
 				utils.WriteError(w, "failed to get currently playing track", http.StatusInternalServerError)
@@ -190,12 +191,12 @@ func LbzFollowingHandler() http.HandlerFunc {
 	}
 }
 
-// nowPlayingTrackID returns the track most recently submitted as playing_now for the user.
-func nowPlayingTrackID(userID int32) (int32, bool) {
+// nowPlayingState returns the track most recently submitted as playing_now for the user.
+func nowPlayingState(userID int32) (catalog.NowPlayingState, bool) {
 	v, ok := memkv.Store.Get(strconv.Itoa(int(userID)))
 	if !ok {
-		return 0, false
+		return catalog.NowPlayingState{}, false
 	}
-	id, ok := v.(int32)
-	return id, ok
+	state, ok := v.(catalog.NowPlayingState)
+	return state, ok
 }

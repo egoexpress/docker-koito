@@ -37,6 +37,12 @@ type ArtistMbidMap struct {
 	Mbid   uuid.UUID
 }
 
+// NowPlayingState is what is stored per user while a track is playing.
+type NowPlayingState struct {
+	TrackID   int32
+	StartedAt time.Time
+}
+
 type SubmitListenOpts struct {
 	// When true, skips registering the listen and only associates or creates the
 	// artist, release, release group, and track in DB
@@ -176,10 +182,11 @@ func SubmitListen(ctx context.Context, store submitListenStore, opts SubmitListe
 	}
 
 	if opts.IsNowPlaying {
+		state := NowPlayingState{TrackID: track.ID, StartedAt: opts.Time}
 		if track.Duration == 0 {
-			memkv.Store.Set(strconv.Itoa(int(opts.UserID)), track.ID)
+			memkv.Store.Set(strconv.Itoa(int(opts.UserID)), state)
 		} else {
-			memkv.Store.Set(strconv.Itoa(int(opts.UserID)), track.ID, time.Duration(track.Duration)*time.Second)
+			memkv.Store.Set(strconv.Itoa(int(opts.UserID)), state, time.Duration(track.Duration)*time.Second)
 		}
 	}
 

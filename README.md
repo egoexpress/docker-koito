@@ -198,7 +198,7 @@ stack that waits on `depends_on: condition: service_healthy`.
 
 ## Updating
 
-The service runs a custom image, `ghcr.io/egoexpress/docker-koito:0.3.2-pr382`,
+The service runs a custom image, `ghcr.io/egoexpress/docker-koito:0.3.2-pr382.2`,
 built from the vendored Koito source in [`image/`](image/README.md). It exists
 because upstream `v0.3.x` only implements the write side of the ListenBrainz
 API; the vendored commit adds the read endpoints that scrobblers such as
@@ -206,7 +206,7 @@ PanoScrobbler use for history and statistics (upstream PR
 [#382](https://github.com/gabehf/Koito/pull/382)).
 
 `.github/workflows/publish-image.yml` builds `image/` and pushes the
-`0.3.2-pr382` and `pr382` tags to GHCR whenever something under `image/`
+`0.3.2-pr382.2` and `pr382` tags to GHCR whenever something under `image/`
 changes. After re-vendoring a newer upstream commit, bump the tag in both that
 workflow and `docker-compose.yaml`.
 

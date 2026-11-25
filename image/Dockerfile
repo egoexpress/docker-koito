@@ -1,6 +1,8 @@
-# Vendored from github.com/gabehf/Koito at commit 9607b66 (pull request #382).
+# Vendored from github.com/gabehf/Koito at commit 36ca617 (pull request #382).
 #
 # Local changes against upstream:
+#   - engine/handlers/lbz_read.go reads catalog.NowPlayingState from memkv,
+#     matching commit 36ca617 instead of the earlier bare track ID
 #   - frontend stage pinned to node:22; node:latest now resolves to Node 26,
 #     where Yarn 4 aborts with "onCancel handler was attached after the
 #     promise settled"
